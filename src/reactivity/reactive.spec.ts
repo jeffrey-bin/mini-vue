@@ -1,7 +1,7 @@
-import { reactive } from './reactive'
+import { reactive, readonly } from './reactive'
 
 describe('reactive test', () => {
-  test('happy path', () => {
+  test('normal reactive', () => {
     const initialObj = {
       name: 'digua',
       age: 18,
@@ -17,5 +17,25 @@ describe('reactive test', () => {
 
     reactiveObj.name = 'jeffrey'
     expect(reactiveObj.name).toBe('jeffrey')
+  })
+  it('readonly', () => {
+    const initialObj = {
+      name: 'digua',
+      age: 18,
+    }
+    const reactiveObj = readonly(initialObj)
+    reactiveObj.age = 18
+  })
+  it('can not set on readonly object', () => {
+    console.warn = jest.fn()
+    const initialObj = {
+      name: 'digua',
+      age: 18,
+    }
+    const reactiveObj = readonly(initialObj)
+
+    // update
+    reactiveObj.age++
+    expect(console.warn).toBeCalled()
   })
 })

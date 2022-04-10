@@ -1,4 +1,4 @@
-import { extend } from '../utils'
+import { extend } from '../shared'
 
 export type Dep = Set<ReactiveEffect>
 export interface ReactiveEffectRunner<T = any> {
