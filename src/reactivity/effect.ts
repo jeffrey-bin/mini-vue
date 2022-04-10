@@ -1,12 +1,31 @@
-export type Dep = Set<ReactiveEffect>
+import { extend } from '../utils'
 
+export type Dep = Set<ReactiveEffect>
+export interface ReactiveEffectRunner<T = any> {
+  (): T
+  effect: ReactiveEffect
+}
 const targetMap = new WeakMap<Record<string, any>, Map<string | symbol, Dep>>()
 
 let activeEffect: ReactiveEffect
 
+export const cleanupEffects = (effect: ReactiveEffect) => {
+  const { deps } = effect
+  if (deps.length > 0) {
+    for (let index = 0; index < deps.length; index++) {
+      const dep = deps[index]
+      dep.delete(effect)
+    }
+
+    effect.deps.length = 0
+  }
+}
+
 class ReactiveEffect {
   deps: Dep[] = []
   active = true
+  onStop: Function = (): void => {}
+
   constructor(public fn, public scheduler) {
   }
 
@@ -25,22 +44,25 @@ class ReactiveEffect {
      * stop
      */
   public stop() {
-    const { deps } = this
-    if (deps.length > 0 || this.active) {
-      for (let index = 0; index < deps.length; index++) {
-        const dep = deps[index]
-        dep.delete(this)
-      }
+    if (this.active) {
+      cleanupEffects(this)
       this.active = false
-      this.deps.length = 0
     }
+    if (this.onStop)
+      this.onStop()
   }
 }
 
-export const effect = (fn: Function, options?: any) => {
+export const effect = (fn: Function, options?: any): ReactiveEffectRunner => {
   const reactiveEffect = new ReactiveEffect(fn, options?.scheduler)
+  extend(reactiveEffect, options)
   reactiveEffect.run()
-  return reactiveEffect.run.bind(reactiveEffect)
+  const runner = reactiveEffect.run.bind(reactiveEffect) as ReactiveEffectRunner
+  runner.effect = reactiveEffect
+  return runner
+}
+export const stop = (runner: ReactiveEffectRunner) => {
+  runner.effect.stop()
 }
 
 export const track = (target: Record<string, any>, key: string | symbol) => {
@@ -59,7 +81,7 @@ export const track = (target: Record<string, any>, key: string | symbol) => {
     targetMap.set(target, deps)
   }
 
-  // deps => dep(effects)
+  // deps => dep
   if (deps.has(key)) {
     dep = deps.get(key)!
   }
@@ -75,7 +97,7 @@ export const track = (target: Record<string, any>, key: string | symbol) => {
 
 export const trigger = (target, key) => {
   if (!targetMap.has(target)) {
-    console.log('target not tracked')
+    // never been tracked
     return
   }
   const deps = targetMap.get(target)
