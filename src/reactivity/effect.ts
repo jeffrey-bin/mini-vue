@@ -7,7 +7,7 @@ let activeEffect: ReactiveEffect
 class ReactiveEffect {
   deps: Dep[] = []
   active = true
-  constructor(public fn) {
+  constructor(public fn, public scheduler) {
   }
 
   /**
@@ -37,8 +37,8 @@ class ReactiveEffect {
   }
 }
 
-export const effect = (fn: Function) => {
-  const reactiveEffect = new ReactiveEffect(fn)
+export const effect = (fn: Function, options?: any) => {
+  const reactiveEffect = new ReactiveEffect(fn, options?.scheduler)
   reactiveEffect.run()
   return reactiveEffect.run.bind(reactiveEffect)
 }
@@ -80,6 +80,10 @@ export const trigger = (target, key) => {
   }
   const deps = targetMap.get(target)
   const dep = deps!.get(key)
-  for (const effect of dep!)
-    effect.run()
+  for (const effect of dep!) {
+    if (effect.scheduler)
+      effect.scheduler()
+    else
+      effect.run()
+  }
 }

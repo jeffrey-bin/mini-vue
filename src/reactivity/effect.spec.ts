@@ -1,8 +1,8 @@
 import { effect } from './effect'
 import { reactive } from './reactive'
 
-describe('effet test', () => {
-  test('happy path', () => {
+describe('effect test', () => {
+  test('should update correctly', () => {
     const initialObj = {
       name: 'digua',
       age: 18,
@@ -43,5 +43,33 @@ describe('effet test', () => {
     })
     expect(runner()).toBe('foo')
     expect(account).toBe(3)
+  })
+  it('scheduler', () => {
+    let dummy
+    let runnerInScheduler: any
+    let runner: any
+    const obj = reactive({ foo: 1 })
+    const scheduler = jest.fn(() => {
+      runnerInScheduler = runner
+    })
+
+    runner = effect(
+      () => {
+        dummy = obj.foo
+      },
+      { scheduler },
+    )
+
+    expect(scheduler).not.toHaveBeenCalled()
+    expect(dummy).toBe(1)
+    // should be called on first trigger
+    obj.foo++
+    expect(scheduler).toHaveBeenCalledTimes(1)
+    // should not run yet
+    expect(dummy).toBe(1)
+    // manually run
+    runnerInScheduler()
+    // should have run
+    expect(dummy).toBe(2)
   })
 })
