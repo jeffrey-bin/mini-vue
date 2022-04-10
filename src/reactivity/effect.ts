@@ -18,7 +18,7 @@ class ReactiveEffect {
       return this.fn()
 
     activeEffect = this
-    this.fn()
+    return this.fn()
   }
 
   /**
@@ -40,7 +40,7 @@ class ReactiveEffect {
 export const effect = (fn: Function) => {
   const reactiveEffect = new ReactiveEffect(fn)
   reactiveEffect.run()
-  return reactiveEffect
+  return reactiveEffect.run.bind(reactiveEffect)
 }
 
 export const track = (target: Record<string, any>, key: string | symbol) => {
@@ -75,7 +75,7 @@ export const track = (target: Record<string, any>, key: string | symbol) => {
 
 export const trigger = (target, key) => {
   if (!targetMap.has(target)) {
-    console.warn('target not tracked')
+    console.log('target not tracked')
     return
   }
   const deps = targetMap.get(target)
