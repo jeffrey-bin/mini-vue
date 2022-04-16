@@ -1,4 +1,4 @@
-import { reactive, readonly } from './reactive'
+import { isReactive, isReadonly, reactive, readonly } from './reactive'
 
 describe('reactive test', () => {
   test('normal reactive', () => {
@@ -37,5 +37,26 @@ describe('reactive test', () => {
     // update
     reactiveObj.age++
     expect(console.warn).toBeCalled()
+  })
+
+  it('is reactive', () => {
+    const initialObj = {
+      name: 'digua',
+      age: 18,
+    }
+
+    const reactiveObj = reactive(initialObj)
+    expect(isReactive(reactiveObj)).toBe(true)
+    expect(isReactive (initialObj)).toBe(false)
+  })
+  it('is readonly ', () => {
+    const initialObj = {
+      name: 'digua',
+      age: 18,
+    }
+
+    const readonlyObj = readonly(initialObj)
+    expect(isReadonly(readonlyObj)).toBe(true)
+    expect(isReadonly(initialObj)).toBe(false)
   })
 })
