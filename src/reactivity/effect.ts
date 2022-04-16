@@ -8,7 +8,7 @@ export interface ReactiveEffectRunner<T = any> {
 const targetMap = new WeakMap<Record<string, any>, Map<string | symbol, Dep>>()
 
 let activeEffect: ReactiveEffect
-
+let shouldTrack = false
 export const cleanupEffects = (effect: ReactiveEffect) => {
   const { deps } = effect
   if (deps.length > 0) {
@@ -35,9 +35,14 @@ class ReactiveEffect {
   public run() {
     if (!this.active)
       return this.fn()
-
+    shouldTrack = true
     activeEffect = this
-    return this.fn()
+
+    const res = this.fn()
+    // rest
+    shouldTrack = false
+
+    return res
   }
 
   /**
@@ -66,7 +71,7 @@ export const stop = (runner: ReactiveEffectRunner) => {
 }
 
 export const track = (target: Record<string, any>, key: string | symbol) => {
-  if (!activeEffect || !activeEffect.active)
+  if (!activeEffect || !shouldTrack)
     return
 
   let deps: Map<string | symbol, Dep>
@@ -89,12 +94,13 @@ export const track = (target: Record<string, any>, key: string | symbol) => {
     dep = new Set()
     deps.set(key, dep)
   }
+  if (dep.has(activeEffect))
+    return
 
   dep.add(activeEffect)
 
   activeEffect.deps.push(dep)
 }
-
 export const trigger = (target, key) => {
   if (!targetMap.has(target)) {
     // never been tracked
